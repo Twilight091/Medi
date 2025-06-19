@@ -1,0 +1,142 @@
+
+{% extends "base.html" %}
+
+{% block title %}Add to Inventory - Pharmacy Inventory System{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1><i class="fas fa-plus me-2"></i>Add to Inventory</h1>
+    <a href="{{ url_for('inventory') }}" class="btn btn-outline-secondary">
+        <i class="fas fa-arrow-left me-2"></i>Back to Inventory
+    </a>
+</div>
+
+<div class="row">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">Add Medicine to Inventory</h5>
+            </div>
+            <div class="card-body">
+                <form method="POST">
+                    <div class="mb-3">
+                        <label for="medicine_id" class="form-label">Medicine <span class="text-danger">*</span></label>
+                        <select class="form-select" id="medicine_id" name="medicine_id" required>
+                            <option value="">Select a medicine...</option>
+                            {% for medicine in medicines %}
+                            <option value="{{ medicine[0] }}">{{ medicine[1] }}</option>
+                            {% endfor %}
+                        </select>
+                        <div class="form-text">Search and select from our database of medicines</div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="quantity" class="form-label">Quantity <span class="text-danger">*</span></label>
+                                <input type="number" class="form-control" id="quantity" name="quantity" min="1" required>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="expiry_date" class="form-label">Expiry Date <span class="text-danger">*</span></label>
+                                <input type="date" class="form-control" id="expiry_date" name="expiry_date" required>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="purchase_price" class="form-label">Purchase Price (per unit) <span class="text-danger">*</span></label>
+                                <div class="input-group">
+                                    <span class="input-group-text">$</span>
+                                    <input type="number" class="form-control" id="purchase_price" name="purchase_price" step="0.01" min="0" required>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="selling_price" class="form-label">Selling Price (per unit) <span class="text-danger">*</span></label>
+                                <div class="input-group">
+                                    <span class="input-group-text">$</span>
+                                    <input type="number" class="form-control" id="selling_price" name="selling_price" step="0.01" min="0" required>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle me-2"></i>
+                            <strong>Profit Margin:</strong> <span id="profit_margin">-</span>
+                        </div>
+                    </div>
+
+                    <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                        <button type="reset" class="btn btn-outline-secondary me-md-2">
+                            <i class="fas fa-undo me-2"></i>Reset
+                        </button>
+                        <button type="submit" class="btn btn-success">
+                            <i class="fas fa-plus me-2"></i>Add to Inventory
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">Tips</h5>
+            </div>
+            <div class="card-body">
+                <ul class="list-unstyled">
+                    <li class="mb-2">
+                        <i class="fas fa-lightbulb text-warning me-2"></i>
+                        Set appropriate profit margins for sustainability
+                    </li>
+                    <li class="mb-2">
+                        <i class="fas fa-calendar-check text-info me-2"></i>
+                        Check expiry dates carefully before adding
+                    </li>
+                    <li class="mb-2">
+                        <i class="fas fa-chart-line text-success me-2"></i>
+                        Monitor inventory levels regularly
+                    </li>
+                    <li class="mb-2">
+                        <i class="fas fa-shield-alt text-primary me-2"></i>
+                        Ensure medicine authenticity and quality
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Calculate profit margin
+function calculateProfitMargin() {
+    const purchasePrice = parseFloat(document.getElementById('purchase_price').value) || 0;
+    const sellingPrice = parseFloat(document.getElementById('selling_price').value) || 0;
+    
+    if (purchasePrice > 0 && sellingPrice > 0) {
+        const margin = ((sellingPrice - purchasePrice) / purchasePrice * 100).toFixed(2);
+        const profit = (sellingPrice - purchasePrice).toFixed(2);
+        document.getElementById('profit_margin').innerHTML = 
+            `${margin}% ($${profit} profit per unit)`;
+    } else {
+        document.getElementById('profit_margin').textContent = '-';
+    }
+}
+
+document.getElementById('purchase_price').addEventListener('input', calculateProfitMargin);
+document.getElementById('selling_price').addEventListener('input', calculateProfitMargin);
+
+// Set minimum date to today
+document.getElementById('expiry_date').min = new Date().toISOString().split('T')[0];
+</script>
+{% endblock %}

@@ -1,0 +1,191 @@
+
+{% extends "base.html" %}
+
+{% block title %}Sell Medicine - Pharmacy Inventory System{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1><i class="fas fa-shopping-cart me-2"></i>Sell Medicine</h1>
+    <a href="{{ url_for('inventory') }}" class="btn btn-outline-secondary">
+        <i class="fas fa-arrow-left me-2"></i>Back to Inventory
+    </a>
+</div>
+
+<div class="row">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">Process Sale</h5>
+            </div>
+            <div class="card-body">
+                <form method="POST">
+                    <div class="mb-3">
+                        <label for="inventory_id" class="form-label">Select Medicine <span class="text-danger">*</span></label>
+                        <select class="form-select" id="inventory_id" name="inventory_id" required onchange="updateMedicineInfo()">
+                            <option value="">Choose medicine to sell...</option>
+                            {% for item in inventory %}
+                            <option value="{{ item[0] }}" 
+                                    data-name="{{ item[1] }}" 
+                                    data-quantity="{{ item[2] }}" 
+                                    data-price="{{ item[5] }}"
+                                    data-expiry="{{ item[3] }}">
+                                {{ item[1] }} (Stock: {{ item[2] }}, Expires: {{ item[3] }})
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div id="medicine_info" class="alert alert-info d-none">
+                        <h6>Medicine Details:</h6>
+                        <p class="mb-1"><strong>Name:</strong> <span id="info_name">-</span></p>
+                        <p class="mb-1"><strong>Available Stock:</strong> <span id="info_stock">-</span> units</p>
+                        <p class="mb-1"><strong>Selling Price:</strong> $<span id="info_price">-</span> per unit</p>
+                        <p class="mb-0"><strong>Expiry Date:</strong> <span id="info_expiry">-</span></p>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="customer_name" class="form-label">Customer Name</label>
+                        <input type="text" class="form-control" id="customer_name" name="customer_name" placeholder="Enter customer name (optional)">
+                        <div class="form-text">Customer name for record keeping</div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="quantity" class="form-label">Quantity to Sell <span class="text-danger">*</span></label>
+                        <input type="number" class="form-control" id="quantity" name="quantity" min="1" required onchange="calculateTotal()">
+                        <div class="form-text">Enter the number of units to sell</div>
+                    </div>
+
+                    <div id="sale_summary" class="alert alert-success d-none">
+                        <h6>Sale Summary:</h6>
+                        <p class="mb-1"><strong>Quantity:</strong> <span id="summary_quantity">-</span> units</p>
+                        <p class="mb-1"><strong>Unit Price:</strong> $<span id="summary_unit_price">-</span></p>
+                        <p class="mb-0"><strong>Total Amount:</strong> $<span id="summary_total">-</span></p>
+                    </div>
+
+                    <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                        <button type="reset" class="btn btn-outline-secondary me-md-2" onclick="resetForm()">
+                            <i class="fas fa-undo me-2"></i>Reset
+                        </button>
+                        <button type="submit" class="btn btn-success" id="sell_btn" disabled>
+                            <i class="fas fa-shopping-cart me-2"></i>Process Sale
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">Quick Actions</h5>
+            </div>
+            <div class="card-body">
+                <div class="d-grid gap-2">
+                    <a href="{{ url_for('inventory') }}" class="btn btn-outline-primary">
+                        <i class="fas fa-boxes me-2"></i>View All Inventory
+                    </a>
+                    <a href="{{ url_for('search') }}" class="btn btn-outline-info">
+                        <i class="fas fa-search me-2"></i>Search Medicines
+                    </a>
+                    <a href="{{ url_for('reports') }}" class="btn btn-outline-success">
+                        <i class="fas fa-chart-bar me-2"></i>Sales Reports
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <div class="card mt-3">
+            <div class="card-header">
+                <h5 class="mb-0">Sale Guidelines</h5>
+            </div>
+            <div class="card-body">
+                <ul class="list-unstyled small">
+                    <li class="mb-2">
+                        <i class="fas fa-check text-success me-2"></i>
+                        Verify medicine expiry before sale
+                    </li>
+                    <li class="mb-2">
+                        <i class="fas fa-check text-success me-2"></i>
+                        Check customer prescription if required
+                    </li>
+                    <li class="mb-2">
+                        <i class="fas fa-check text-success me-2"></i>
+                        Ensure adequate stock availability
+                    </li>
+                    <li class="mb-2">
+                        <i class="fas fa-check text-success me-2"></i>
+                        Provide proper usage instructions
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function updateMedicineInfo() {
+    const select = document.getElementById('inventory_id');
+    const option = select.selectedOptions[0];
+    
+    if (option && option.value) {
+        const info = document.getElementById('medicine_info');
+        info.classList.remove('d-none');
+        
+        document.getElementById('info_name').textContent = option.dataset.name;
+        document.getElementById('info_stock').textContent = option.dataset.quantity;
+        document.getElementById('info_price').textContent = parseFloat(option.dataset.price).toFixed(2);
+        document.getElementById('info_expiry').textContent = option.dataset.expiry;
+        
+        // Set max quantity
+        document.getElementById('quantity').max = option.dataset.quantity;
+        document.getElementById('quantity').value = '';
+        
+        // Hide sale summary
+        document.getElementById('sale_summary').classList.add('d-none');
+        document.getElementById('sell_btn').disabled = true;
+    } else {
+        document.getElementById('medicine_info').classList.add('d-none');
+        document.getElementById('sale_summary').classList.add('d-none');
+        document.getElementById('sell_btn').disabled = true;
+    }
+}
+
+function calculateTotal() {
+    const select = document.getElementById('inventory_id');
+    const option = select.selectedOptions[0];
+    const quantity = parseInt(document.getElementById('quantity').value);
+    
+    if (option && option.value && quantity > 0) {
+        const unitPrice = parseFloat(option.dataset.price);
+        const maxQuantity = parseInt(option.dataset.quantity);
+        
+        if (quantity <= maxQuantity) {
+            const total = quantity * unitPrice;
+            
+            document.getElementById('summary_quantity').textContent = quantity;
+            document.getElementById('summary_unit_price').textContent = unitPrice.toFixed(2);
+            document.getElementById('summary_total').textContent = total.toFixed(2);
+            
+            document.getElementById('sale_summary').classList.remove('d-none');
+            document.getElementById('sell_btn').disabled = false;
+        } else {
+            document.getElementById('sale_summary').classList.add('d-none');
+            document.getElementById('sell_btn').disabled = true;
+            alert('Quantity cannot exceed available stock (' + maxQuantity + ' units)');
+        }
+    } else {
+        document.getElementById('sale_summary').classList.add('d-none');
+        document.getElementById('sell_btn').disabled = true;
+    }
+}
+
+function resetForm() {
+    document.getElementById('medicine_info').classList.add('d-none');
+    document.getElementById('sale_summary').classList.add('d-none');
+    document.getElementById('sell_btn').disabled = true;
+}
+</script>
+{% endblock %}

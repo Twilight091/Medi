@@ -1,0 +1,212 @@
+{% extends "base.html" %}
+
+{% block title %}Sales Reports - Pharmacy Inventory System{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1><i class="fas fa-chart-bar me-2"></i>Sales Reports</h1>
+    <div class="btn-group" role="group">
+        <a href="?period=daily" class="btn btn-{{ 'primary' if period == 'daily' else 'outline-primary' }}">Daily</a>
+        <a href="?period=weekly" class="btn btn-{{ 'primary' if period == 'weekly' else 'outline-primary' }}">Weekly</a>
+        <a href="?period=monthly" class="btn btn-{{ 'primary' if period == 'monthly' else 'outline-primary' }}">Monthly</a>
+    </div>
+</div>
+
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="card bg-info text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h4>{{ sales|length }}</h4>
+                        <p class="mb-0">Total Transactions</p>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="fas fa-receipt fa-2x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-success text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h4>${{ "%.2f"|format(sales|sum(attribute=3)|default(0)) }}</h4>
+                        <p class="mb-0">Total Sales</p>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="fas fa-dollar-sign fa-2x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-warning text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h4>${{ "%.2f"|format(sales|sum(attribute=4)|default(0)) }}</h4>
+                        <p class="mb-0">Total Profit</p>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="fas fa-chart-line fa-2x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-primary text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h4>{{ sales|sum(attribute=2)|default(0) }}</h4>
+                        <p class="mb-0">Units Sold</p>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="fas fa-pills fa-2x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header">
+        <h5 class="mb-0">{{ period.title() }} Sales Report</h5>
+    </div>
+    <div class="card-body">
+        {% if sales %}
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead class="table-dark">
+                            <tr>
+                                <th>Date</th>
+                                <th>Time</th>
+                                <th>Medicine</th>
+                                <th>Customer</th>
+                                <th>Quantity</th>
+                                <th>Total Bill</th>
+                                <th>Profit</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for sale in sales %}
+                            <tr>
+                                <td>{{ sale[0] }}</td>
+                                <td>{{ sale[1] or '-' }}</td>
+                                <td><strong>{{ sale[2] }}</strong></td>
+                                <td>{{ sale[3] or 'Walk-in Customer' }}</td>
+                                <td>
+                                    <span class="badge bg-primary fs-6">{{ sale[4] }}</span>
+                                </td>
+                                <td class="text-success fw-bold">${{ "%.2f"|format(sale[5]) }}</td>
+                                <td class="text-{{ 'success' if sale[6] > 0 else 'danger' }} fw-bold">
+                                    ${{ "%.2f"|format(sale[6]) }}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                    </tbody>
+                    <tfoot class="table-light">
+                        <tr>
+                            <th colspan="2">TOTALS</th>
+                            <th>{{ sales|sum(attribute=2) }} units</th>
+                            <th class="text-success">${{ "%.2f"|format(sales|sum(attribute=3)) }}</th>
+                            <th class="text-warning">${{ "%.2f"|format(sales|sum(attribute=4)) }}</th>
+                            <th>
+                                {% set overall_margin = ((sales|sum(attribute=4) / (sales|sum(attribute=3) - sales|sum(attribute=4))) * 100) if sales|sum(attribute=3) > sales|sum(attribute=4) else 0 %}
+                                <span class="badge bg-{{ 'success' if overall_margin >= 20 else 'warning' if overall_margin >= 10 else 'danger' }}">
+                                    {{ "%.1f"|format(overall_margin) }}%
+                                </span>
+                            </th>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+        {% else %}
+            <div class="text-center text-muted py-5">
+                <i class="fas fa-chart-bar fa-3x mb-3"></i>
+                <p>No sales data found for the {{ period }} period.</p>
+                <a href="{{ url_for('sell') }}" class="btn btn-primary">
+                    <i class="fas fa-shopping-cart me-2"></i>Process First Sale
+                </a>
+            </div>
+        {% endif %}
+    </div>
+</div>
+
+{% if sales %}
+<div class="row mt-4">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">Top Selling Medicines</h5>
+            </div>
+            <div class="card-body">
+                {% set top_medicines = sales|sort(attribute=2, reverse=true) %}
+                <div class="table-responsive">
+                    <table class="table table-sm">
+                        <thead>
+                            <tr>
+                                <th>Medicine</th>
+                                <th>Units Sold</th>
+                                <th>Revenue</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for medicine in top_medicines[:5] %}
+                            <tr>
+                                <td>{{ medicine[1] }}</td>
+                                <td><span class="badge bg-primary">{{ medicine[2] }}</span></td>
+                                <td class="text-success">${{ "%.2f"|format(medicine[3]) }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">Most Profitable Medicines</h5>
+            </div>
+            <div class="card-body">
+                {% set top_profit = sales|sort(attribute=4, reverse=true) %}
+                <div class="table-responsive">
+                    <table class="table table-sm">
+                        <thead>
+                            <tr>
+                                <th>Medicine</th>
+                                <th>Profit</th>
+                                <th>Margin</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for medicine in top_profit[:5] %}
+                            {% set margin = ((medicine[4] / (medicine[3] - medicine[4])) * 100) if medicine[3] > medicine[4] else 0 %}
+                            <tr>
+                                <td>{{ medicine[1] }}</td>
+                                <td class="text-success">${{ "%.2f"|format(medicine[4]) }}</td>
+                                <td>
+                                    <span class="badge bg-{{ 'success' if margin >= 20 else 'warning' if margin >= 10 else 'danger' }}">
+                                        {{ "%.1f"|format(margin) }}%
+                                    </span>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endblock %}
